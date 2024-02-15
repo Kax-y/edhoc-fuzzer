@@ -37,7 +37,11 @@ import com.github.protocolfuzzing.protocolstatefuzzer.statefuzzer.testrunner.tim
 import com.github.protocolfuzzing.protocolstatefuzzer.statefuzzer.testrunner.timingprobe.config.TimingProbeConfigStandard;
 import com.github.protocolfuzzing.protocolstatefuzzer.statefuzzer.testrunner.timingprobe.config.TimingProbeEnabler;
 
-public class MultiBuilder implements StateFuzzerConfigBuilder, StateFuzzerBuilder<EdhocInput, EdhocOutput>, TestRunnerBuilder, TimingProbeBuilder {
+public class MultiBuilder implements
+    StateFuzzerConfigBuilder,
+    StateFuzzerBuilder<MealyMachineWrapper<EdhocInput, EdhocOutput>>,
+    TestRunnerBuilder,
+    TimingProbeBuilder {
 
     protected AlphabetBuilder<EdhocInput> alphabetBuilder = new AlphabetBuilderStandard<>(
         new AlphabetSerializerXml<EdhocInput, EdhocAlphabetPojoXml>(EdhocInput.class, EdhocAlphabetPojoXml.class)
@@ -67,7 +71,7 @@ public class MultiBuilder implements StateFuzzerConfigBuilder, StateFuzzerBuilde
     }
 
     @Override
-    public StateFuzzer<EdhocInput, EdhocOutput> build(StateFuzzerEnabler stateFuzzerEnabler) {
+    public StateFuzzer<MealyMachineWrapper<EdhocInput, EdhocOutput>> build(StateFuzzerEnabler stateFuzzerEnabler) {
         return new StateFuzzerStandard<>(
             new StateFuzzerComposerStandard<>(stateFuzzerEnabler, alphabetBuilder, sulBuilder, sulWrapper).initialize()
         );
