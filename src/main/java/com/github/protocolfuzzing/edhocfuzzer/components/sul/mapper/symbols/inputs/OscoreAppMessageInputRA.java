@@ -1,5 +1,6 @@
 package com.github.protocolfuzzing.edhocfuzzer.components.sul.mapper.symbols.inputs;
 
+import com.github.protocolfuzzing.edhocfuzzer.components.sul.core.protocol.EdhocSessionPersistent;
 import com.github.protocolfuzzing.edhocfuzzer.components.sul.core.protocol.MessageProcessorPersistent;
 import com.github.protocolfuzzing.edhocfuzzer.components.sul.core.protocol.messages.EdhocProtocolMessage;
 import com.github.protocolfuzzing.edhocfuzzer.components.sul.core.protocol.messages.common.OscoreAppMessage;
@@ -9,8 +10,15 @@ import de.learnlib.ralib.words.ParameterizedSymbol;
 
 public class OscoreAppMessageInputRA extends EdhocInputRA {
 
-    OscoreAppMessageInputRA(ParameterizedSymbol baseSymbol, @SuppressWarnings("rawtypes") DataValue[] parameterValues) {
+    OscoreAppMessageInputRA(ParameterizedSymbol baseSymbol, DataValue<?>[] parameterValues) {
         super(baseSymbol, parameterValues);
+    }
+
+    @Override
+    public void preSendUpdate(EdhocExecutionContextRA context) {
+        EdhocSessionPersistent session = context.getState().getEdhocSessionPersistent();
+
+        updatePeerConnectionId(session);
     }
 
     @Override
