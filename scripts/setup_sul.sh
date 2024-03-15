@@ -35,7 +35,7 @@ setup_lakers() {
 
 setup_rise() {
   # rise
-  CHECKOUT="d728368ac44dabceff2b4a2c5fcd757552e65f9e"
+  CHECKOUT="9bdb7561147a36a2064c2f7968291436b742d2e9"
   PREFIX="${SOURCES_DIR}/californium/cf-edhoc/src"
   POSTFIX="java/org/eclipse/californium/edhoc"
   CF_EDHOC_MAIN_DIR="${PREFIX}/main/${POSTFIX}"
@@ -66,7 +66,7 @@ setup_rise() {
 
 setup_sifis_home() {
   # sifis-home
-  CHECKOUT="9956c8cf9a6f8cb3ab09e48842ceafeb9d2a790e"
+  CHECKOUT="3d1b68b6bda978778575682a48b3344028d47028"
 
   set -e
   echo "Setting up SIFIS-HOME in ${SOURCES_DIR}"
