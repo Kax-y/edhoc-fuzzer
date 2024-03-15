@@ -21,6 +21,7 @@
         <jakarta-xml.version>4.0.2</jakarta-xml.version>
         <jcommander.version>1.82</jcommander.version>
         <log4j.version>2.23.1</log4j.version>
+        <ralib.version>0.1-SNAPSHOT</ralib.version>
     </properties>
 
     <dependencyManagement>
@@ -76,6 +77,13 @@
                 <scope>runtime</scope>
             </dependency>
 
+            <!-- ralib -->
+            <dependency>
+                <groupId>de.learnlib</groupId>
+                <artifactId>ralib</artifactId>
+                <version>${ralib.version}</version>
+            </dependency>
+
             <!-- gson -->
             <dependency>
                 <groupId>com.google.code.gson</groupId>
@@ -129,6 +137,13 @@
             <artifactId>log4j-slf4j-impl</artifactId>
         </dependency>
 
+        <!-- locally installed ralib -->
+        <dependency>
+            <groupId>de.learnlib</groupId>
+            <artifactId>ralib</artifactId>
+            <version>${ralib.version}</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -179,6 +194,10 @@
                                 <ignoredUsedUndeclaredDependency>
                                     <!-- transitive -->
                                     org.slf4j:slf4j-api
+                                </ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>
+                                    <!-- transitive -->
+                                    de.learnlib:learnlib-api:jar:*
                                 </ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
                         </configuration>
