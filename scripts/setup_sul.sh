@@ -97,7 +97,7 @@ setup_sifis_home() {
 
 setup_uoscore_uedhoc() {
   # uoscore-uedhoc
-  CHECKOUT="9c18a3503ad905e79e2dbe847cb14c1650524eee"
+  CHECKOUT="tags/v3.0.3"
 
   set -e
   echo "Setting up uOSCORE-uEDHOC in ${SOURCES_DIR}"
@@ -106,6 +106,7 @@ setup_uoscore_uedhoc() {
   UOE_DIR="${SOURCES_DIR}/uoscore-uedhoc"
   cd "${UOE_DIR}"
   git checkout ${CHECKOUT}
+  git submodule update --checkout
   git apply "${PATCH_DIR}"/uoscore-uedhoc.patch
   make
   make -C samples/linux_edhoc/initiator
