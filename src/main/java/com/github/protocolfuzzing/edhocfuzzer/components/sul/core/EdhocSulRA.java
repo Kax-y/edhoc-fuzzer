@@ -22,13 +22,19 @@ import com.github.protocolfuzzing.protocolstatefuzzer.components.sul.core.SulAda
 import com.github.protocolfuzzing.protocolstatefuzzer.components.sul.core.config.SulConfig;
 import com.github.protocolfuzzing.protocolstatefuzzer.components.sul.core.sulwrappers.DynamicPortProvider;
 import com.github.protocolfuzzing.protocolstatefuzzer.utils.CleanupTasks;
+import de.learnlib.ralib.data.DataType;
+import de.learnlib.ralib.data.DataValue;
+import de.learnlib.ralib.data.FreshValue;
 import de.learnlib.ralib.words.PSymbolInstance;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.californium.core.config.CoapConfig;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 public class EdhocSulRA implements AbstractSul<PSymbolInstance, PSymbolInstance, EdhocExecutionContextRA> {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -43,6 +49,8 @@ public class EdhocSulRA implements AbstractSul<PSymbolInstance, PSymbolInstance,
     protected EdhocMapperConnector edhocMapperConnector;
     protected boolean serverWaitForInitialMessageDone;
     protected EnumAlphabet alphabet;
+    @SuppressWarnings("rawtypes")
+    private final Map<DataType, Map<DataValue, Object>> buckets = new HashMap<>();
 
     public EdhocSulRA(SulConfig sulConfig, CleanupTasks cleanupTasks, EnumAlphabet alphabet) {
         this.sulConfig = sulConfig;
@@ -125,6 +133,8 @@ public class EdhocSulRA implements AbstractSul<PSymbolInstance, PSymbolInstance,
     public void pre() {
         LOGGER.debug("SUL 'pre' start");
 
+        buckets.clear();
+
         if (sulConfig.isFuzzingClient()) {
             ServerMapperConnector serverMapperConnector = (ServerMapperConnector) edhocMapperConnector;
             edhocMapperState = new ServerMapperState(edhocMapperConfig, cleanupTasks).initialize(serverMapperConnector);
@@ -167,7 +177,7 @@ public class EdhocSulRA implements AbstractSul<PSymbolInstance, PSymbolInstance,
     }
 
     @Override
-    public PSymbolInstance step(PSymbolInstance abstractInput) {
+    public PSymbolInstance step(PSymbolInstance input) {
         // In case of server mapper, wait for initial message from client
         serverWaitForInitialMessage();
 
@@ -179,9 +189,10 @@ public class EdhocSulRA implements AbstractSul<PSymbolInstance, PSymbolInstance,
             return edhocMapperComposer.getOutputMapper().disabled();
         }
 
-        PSymbolInstance abstractOutput = executeInput(abstractInput);
+        // If remapInstance works as intended this should remap all random datavalues to something deterministic for the types that need it.
+        PSymbolInstance output = remapInstance(executeInput(remapInstance(input)));
 
-        if (edhocMapperComposer.getOutputChecker().isDisabled(abstractOutput)
+        if (edhocMapperComposer.getOutputChecker().isDisabled(output)
                 || !edhocExecutionContext.isExecutionEnabled()) {
             // this should lead to a disabled sink state
             edhocExecutionContext.disableExecution();
@@ -189,7 +200,7 @@ public class EdhocSulRA implements AbstractSul<PSymbolInstance, PSymbolInstance,
 
         LOGGER.debug("SUL 'step' end");
 
-        return abstractOutput;
+        return output;
     }
 
     protected PSymbolInstance executeInput(PSymbolInstance abstractInput) {
@@ -243,6 +254,53 @@ public class EdhocSulRA implements AbstractSul<PSymbolInstance, PSymbolInstance,
 
         LOGGER.debug("Received {} from client", expectedMessageType);
         serverWaitForInitialMessageDone = true;
+    }
+
+
+    @SuppressWarnings("rawtypes")
+    public PSymbolInstance remapInstance(PSymbolInstance input) {
+        DataValue[] values = Stream
+                .of(input.getParameterValues())
+                .map(this::remapDataValue)
+                .toArray(DataValue[]::new);
+        return new PSymbolInstance(input.getBaseSymbol(), values);
+    }
+
+
+    @SuppressWarnings({"unchecked","rawtypes"})
+    public DataValue remapDataValue(DataValue dv) {
+        Object val = resolve(dv);
+        return  isFresh(dv.getType(), val)
+                ? registerFreshValue(dv.getType(), val)
+                : new DataValue(dv.getType(), val);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private Object resolve(DataValue d) {
+        Map<DataValue, Object> map = buckets.get(d.getType());
+        if (map == null || !map.containsKey(d)) {
+            return d.getId();
+        }
+        return map.get(d);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private boolean isFresh(DataType t, Object id) {
+        Map<DataValue, Object> map = buckets.get(t);
+        return map == null || !map.containsValue(id);
+    }
+
+    @SuppressWarnings({"unchecked","rawtypes"})
+    private DataValue registerFreshValue(DataType retType, Object ret) {
+        Map<DataValue, Object> map = buckets.get(retType);
+        if (map == null) {
+            map = new HashMap<>();
+            buckets.put(retType, map);
+        }
+
+        DataValue v = new DataValue(retType, map.size());
+        map.put(v, ret);
+        return new FreshValue(v.getType(), v.getId());
     }
 
 }
