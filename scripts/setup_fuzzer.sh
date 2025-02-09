@@ -8,17 +8,34 @@ readonly BASE_DIR
 setup_psf() {
     # setup protocol-state-fuzzer library
 
-    CHECKOUT="4d7d6256d0be4cce240399b65ce9e486700b15bb"
+    CHECKOUT="d665cb9d4396ced98131df70adb445150b4d3704"
 
     set -e
     cd "${BASE_DIR}"
     git clone "https://github.com/protocol-fuzzing/protocol-state-fuzzer.git"
     cd protocol-state-fuzzer
     git checkout ${CHECKOUT}
-    mvn install -DskipTests
+    bash ./install.sh
 
     cd "${BASE_DIR}"
     rm -rf ./protocol-state-fuzzer/
+    set +e
+}
+
+setup_ralib() {
+    # setup RALib
+
+    CHECKOUT="main"
+
+    set -e
+    cd "${BASE_DIR}"
+    git clone "https://github.com/LearnLib/ralib"
+    cd ralib
+    git checkout ${CHECKOUT}
+    mvn install -DskipTests
+
+    cd "${BASE_DIR}"
+    rm -rf ./ralib/
     set +e
 }
 
@@ -58,7 +75,8 @@ setup_fuzzer() {
     set -e
     cd "${BASE_DIR}"
     mvn clean verify
-    ln -sf "${BASE_DIR}"/target/edhoc-fuzzer-*-jar-with-dependencies.jar edhoc-fuzzer.jar
+    ln -sf "${BASE_DIR}"/target/edhoc-fuzzer-*-mealy-jar-with-dependencies.jar edhoc-fuzzer.jar
+    ln -sf "${BASE_DIR}"/target/edhoc-fuzzer-*-ra-jar-with-dependencies.jar edhoc-fuzzerRA.jar
     set +e
 }
 
@@ -68,21 +86,23 @@ usage() {
   Options (library setup prior to EDHOC-Fuzzer):
     -p  Fetch and setup only protocol-state-fuzzer library
     -e  Fetch and setup only cf-edhoc library
-    -l  Fetch and setup protocol-state-fuzzer and cf-edhoc libraries
+    -r  Fetch and setup only ralib
+    -l  Fetch and setup protocol-state-fuzzer, ralib and cf-edhoc libraries
+    -f  Only setup fuzzer
     -h  Show usage message
 END
   exit 0
 }
 
 
-while getopts :pelh flag
+while getopts :pelrfh flag
 do
   case "${flag}" in
-    p) setup_psf ;;
-    e) setup_cf_edhoc ;;
-    l) setup_psf; setup_cf_edhoc ;;
+    p) setup_psf; setup_fuzzer ;;
+    e) setup_cf_edhoc; setup_fuzzer ;;
+    r) setup_ralib; setup_fuzzer ;;
+    l) setup_ralib; setup_psf; setup_cf_edhoc; setup_fuzzer ;;
+    f) setup_fuzzer ;;
     : | \? | h | *) usage ;;
   esac
 done
-
-setup_fuzzer

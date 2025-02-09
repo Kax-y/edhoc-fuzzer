@@ -12,7 +12,6 @@ import com.github.protocolfuzzing.edhocfuzzer.components.sul.mapper.config.authe
 import com.github.protocolfuzzing.edhocfuzzer.components.sul.mapper.config.authentication.TestVectorAuthenticationConfig;
 import com.github.protocolfuzzing.edhocfuzzer.components.sul.mapper.connectors.CoapExchanger;
 import com.github.protocolfuzzing.edhocfuzzer.components.sul.mapper.connectors.EdhocMapperConnector;
-import com.github.protocolfuzzing.protocolstatefuzzer.components.sul.mapper.context.State;
 import com.github.protocolfuzzing.protocolstatefuzzer.utils.CleanupTasks;
 import com.upokecenter.cbor.CBORObject;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
@@ -26,20 +25,16 @@ import java.security.Security;
 import java.util.*;
 
 /** Adapted from test files EdhocClient / EdhocServer from edhoc repo */
-public abstract class EdhocMapperState implements State {
-
-    // The protocol version of edhoc used for the session of this state
-    protected ProtocolVersion protocolVersion;
-
-    // The combined message (EDHOC+OSCORE) version used for the session of this state
-    protected CombinedMessageVersion combinedMessageVersion;
+public abstract class EdhocMapperState {
 
     // The authentication method to include in EDHOC message_1 (relevant only when Initiator)
     protected int authenticationMethod;
 
     // Authentication credentials of this peer
-    // At the top level, authentication credentials are sorted by key usage of the authentication keys.
-    // The outer map has label SIGNATURE_KEY or ECDH_KEY for distinguishing the two key usages.
+    // At the top level, authentication credentials are sorted by key usage of the
+    // authentication keys.
+    // The outer map has label SIGNATURE_KEY or ECDH_KEY for distinguishing the two
+    // key usages.
     // The asymmetric key pairs of this peer (one per supported curve)
     protected HashMap<Integer, HashMap<Integer, OneKey>> keyPairs = new HashMap<>();
 
@@ -49,7 +44,8 @@ public abstract class EdhocMapperState implements State {
     // The authentication credentials of this peer (one per supported curve)
     protected HashMap<Integer, HashMap<Integer, CBORObject>> creds = new HashMap<>();
 
-    // Each element is the ID_CRED_X used for an authentication credential associated to this peer
+    // Each element is the ID_CRED_X used for an authentication credential
+    // associated to this peer
     protected Set<CBORObject> ownIdCreds = new HashSet<>();
 
     // Authentication credentials of the other peers
@@ -62,11 +58,13 @@ public abstract class EdhocMapperState implements State {
     protected HashMap<CBORObject, CBORObject> peerCredentials = new HashMap<>();
 
     // Existing EDHOC Sessions, including completed ones
-    // The map label is C_X, i.e. the connection identifier offered to the other peer, as a CBOR integer or byte string
+    // The map label is C_X, i.e. the connection identifier offered to the other
+    // peer, as a CBOR integer or byte string
     protected HashMap<CBORObject, EdhocSessionPersistent> edhocSessionsPersistent = new HashMap<>();
 
     // Each element is a used Connection Identifier offered to the other peers.
-    // Connection Identifiers are stored as CBOR integers (if numeric) or as CBOR byte strings (if binary)
+    // Connection Identifiers are stored as CBOR integers (if numeric) or as CBOR
+    // byte strings (if binary)
     protected Set<CBORObject> usedConnectionIds = new HashSet<>();
 
     // List of supported cipher suites, in decreasing order of preference.
@@ -75,7 +73,8 @@ public abstract class EdhocMapperState implements State {
     // Set of supported EAD items
     protected Set<Integer> supportedEADs = new HashSet<>();
 
-    // The collection of application profiles - The lookup key is the full URI of the EDHOC resource
+    // The collection of application profiles - The lookup key is the full URI of
+    // the EDHOC resource
     protected HashMap<String, AppProfile> appProfiles = new HashMap<>();
 
     // The database of OSCORE Security Contexts
@@ -98,12 +97,9 @@ public abstract class EdhocMapperState implements State {
 
     protected CleanupTasks cleanupTasks;
 
-    public EdhocMapperState(ProtocolVersion protocolVersion, EdhocMapperConfig edhocMapperConfig,
-                            String edhocSessionUri, String oscoreUri, CleanupTasks cleanupTasks) {
+    public EdhocMapperState(EdhocMapperConfig edhocMapperConfig, String edhocSessionUri, String oscoreUri, CleanupTasks cleanupTasks) {
 
-        this.protocolVersion = protocolVersion;
         this.edhocMapperConfig = edhocMapperConfig;
-        this.combinedMessageVersion = edhocMapperConfig.getCombinedMessageVersion();
         this.cleanupTasks = cleanupTasks;
 
         // Insert security providers
@@ -142,15 +138,14 @@ public abstract class EdhocMapperState implements State {
         edhocEndpointInfoPersistent = new EdhocEndpointInfoPersistent(
                 idCreds, creds, keyPairs, peerPublicKeys, peerCredentials, edhocSessionsPersistent,
                 usedConnectionIds, supportedCipherSuites, supportedEADs, null, trustModel, db, oscoreUri,
-                OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE, appProfiles
-        );
+                OSCORE_REPLAY_WINDOW, MAX_UNFRAGMENTED_SIZE, appProfiles);
 
         // Set up the authentication credentials
         Authenticator authenticator;
 
-        authenticator = manyFilesAuthIsUsed ?
-                new ManyFilesAuthenticator(authenticationConfig, edhocEndpointInfoPersistent, ownIdCreds) :
-                new TestVectorAuthenticator(authenticationConfig, edhocEndpointInfoPersistent, ownIdCreds,
+        authenticator = manyFilesAuthIsUsed
+                ? new ManyFilesAuthenticator(authenticationConfig, edhocEndpointInfoPersistent, ownIdCreds)
+                : new TestVectorAuthenticator(authenticationConfig, edhocEndpointInfoPersistent, ownIdCreds,
                         edhocMapperConfig.isInitiator());
 
         authenticator.setupOwnAuthenticationCredentials();
@@ -167,7 +162,8 @@ public abstract class EdhocMapperState implements State {
 
         boolean isInitiator = edhocMapperConfig.isInitiator();
 
-        // logically isClientInitiated when (isInitiator && isCoapClient()) || (!isInitiator && !isCoapClient())
+        // logically isClientInitiated when (isInitiator && isCoapClient()) ||
+        // (!isInitiator && !isCoapClient())
         // which simplifies to isClientInitiated when isInitiator == isCoapClient()
         boolean isClientInitiated = isInitiator == isCoapClient();
 
@@ -180,7 +176,8 @@ public abstract class EdhocMapperState implements State {
         edhocSessionsPersistent.put(CBORObject.FromObject(connectionId), edhocSessionPersistent);
 
         if (edhocMapperConfig.getForceOscoreRecipientId() != null) {
-            // forceRecipientId should point to the session, in order for the session to be accessible from
+            // forceRecipientId should point to the session, in order for the session to be
+            // accessible from
             // the OSCORE context's recipient id as well
             edhocSessionsPersistent.put(CBORObject.FromObject(edhocMapperConfig.getForceOscoreRecipientId()),
                     edhocSessionPersistent);
@@ -198,11 +195,11 @@ public abstract class EdhocMapperState implements State {
     }
 
     public ProtocolVersion getProtocolVersion() {
-        return protocolVersion;
+        return edhocMapperConfig.getProtocolVersion();
     }
 
     public CombinedMessageVersion getCombinedMessageVersion() {
-        return combinedMessageVersion;
+        return edhocMapperConfig.getCombinedMessageVersion();
     }
 
     public EdhocSessionPersistent getEdhocSessionPersistent() {
@@ -238,5 +235,13 @@ public abstract class EdhocMapperState implements State {
     public boolean receiveWithPrependedCX() {
         // only coap server can receive with prepended CX if it is enabled
         return !isCoapClient() && edhocMapperConfig.useCXCorrelation();
+    }
+
+    public void updateEdhocSessionsPersistent(byte[] connectionId, EdhocSessionPersistent session) {
+        CBORObject ci = CBORObject.FromObject(connectionId);
+        if (!usedConnectionIds.contains(ci)) {
+            usedConnectionIds.add(ci);
+            edhocSessionsPersistent.put(ci, session);
+        }
     }
 }
