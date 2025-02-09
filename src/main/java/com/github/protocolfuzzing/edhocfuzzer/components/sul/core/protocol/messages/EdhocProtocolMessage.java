@@ -39,6 +39,7 @@ public abstract class EdhocProtocolMessage {
             contentFormat = Constants.APPLICATION_EDHOC_CBOR_SEQ;
         }
     }
+
     public byte[] getPayload() {
         return payload;
     }
@@ -47,7 +48,15 @@ public abstract class EdhocProtocolMessage {
         return messageCode;
     }
 
-    public int getContentFormat() {
+    public int getContentFormat(boolean oldVersion) {
+        if (oldVersion) {
+            return switch (contentFormat) {
+                case Constants.APPLICATION_EDHOC_CBOR_SEQ -> 65000;
+                case Constants.APPLICATION_CID_EDHOC_CBOR_SEQ -> 65001;
+                default -> contentFormat;
+            };
+        }
+
         return contentFormat;
     }
 

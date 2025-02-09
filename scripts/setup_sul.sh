@@ -14,7 +14,7 @@ mkdir -p "${SOURCES_DIR}" "${SERVERS_DIR}" "${CLIENTS_DIR}"
 
 setup_lakers() {
   # lakers
-  CHECKOUT="tags/v0.5.0"
+  CHECKOUT="tags/v0.7.2"
 
   set -e
   echo "Setting up Lakers in ${SOURCES_DIR}"
@@ -35,7 +35,7 @@ setup_lakers() {
 
 setup_rise() {
   # rise
-  CHECKOUT="9bdb7561147a36a2064c2f7968291436b742d2e9"
+  CHECKOUT="b08bf12dae965044925eb58ee25717a4d2f8105b"
   PREFIX="${SOURCES_DIR}/californium/cf-edhoc/src"
   POSTFIX="java/org/eclipse/californium/edhoc"
   CF_EDHOC_MAIN_DIR="${PREFIX}/main/${POSTFIX}"
